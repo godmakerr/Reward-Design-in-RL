@@ -5,6 +5,7 @@
 ## 📂 项目结构
 - `train_gsm8k_ppo.py`: PPO 强化学习训练主脚本（包含 Reward Function 定义）。
 - `eval_base_model.py`: 原始模型基准测试脚本。
+- `eval_rlhf_model.py`: 强化学习模型测试脚本。
 - `requirements.txt`: 环境依赖文件。
 
 ## 🚀 快速开始
@@ -12,3 +13,15 @@
 ### 1. 安装依赖
 ```bash
 pip install -r requirements.txt
+```
+
+### 2. 运行训练脚本
+```bash
+python train_gsm8k_ppo.py
+```
+
+### 3. 运行评估脚本
+```bash
+python eval_base_model.py
+python eval_rlhf_model.py
+```
