@@ -7,7 +7,6 @@
 - `ppo_rlhf_gsm8k.py`: 使用 PPO 进行 RLHF 训练。
 - `eval_gsm8k_json.py`: 在 GSM8k 上评估模型并输出预测。
 - `utils_gsm8k.py`: 数据处理与评估工具函数。
-- `convert_to_safetensors.py`: 模型权重格式转换辅助脚本。
 
 ## 子目录
 - `accelerate/`: Accelerate 多卡训练配置。

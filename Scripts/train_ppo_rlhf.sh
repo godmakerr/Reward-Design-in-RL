@@ -13,27 +13,13 @@ ACTOR_DIR="${MODEL_DIR}/Models/qwen_3_1_7b"
 RM_DIR="${MODEL_DIR}/Models/qwen_3_1_7b_rm"
 OUT_DIR="${MODEL_DIR}/Models/qwen_3_1_7b_ppo_bf16_selfrm"
 
-# accelerate launch \
-#   --config_file Code/accelerate/multi_gpu_bf16.yaml \
-#   Code/ppo_rlhf_gsm8k.py -- \
-#   --train_jsonl "${TRAIN_JSONL}" \
-#   --eval_jsonl "${EVAL_JSONL}" \
-#   --actor_model_dir "${ACTOR_DIR}" \
-#   --reward_model_dir "${RM_DIR}" \
-#   --output_dir "${OUT_DIR}" \
-#   --per_device_train_batch_size 1 \
-#   --gradient_accumulation_steps 8 \
-#   --per_device_eval_batch_size 1 \
-#   --world_size 4 \
-#   --max_prompt_len 128 \
-#   --response_length 128 \
-#   --local_rollout_forward_batch_size 4
-
 accelerate launch \
   --config_file /root/fu_wj/clone2github/Reward-Design-in-RL/Code/accelerate/ds_zero3_bf16.yaml \
   Code/ppo_rlhf_gsm8k.py -- \
   --train_jsonl "${TRAIN_JSONL}" \
   --eval_jsonl "${EVAL_JSONL}" \
+  --proj_name "reward_design_in_rl" \
+  --run_name "qwen_ppo_rlhf" \
   --actor_model_dir "${ACTOR_DIR}" \
   --reward_model_dir "${RM_DIR}" \
   --output_dir "${OUT_DIR}" \

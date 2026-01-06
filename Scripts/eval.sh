@@ -3,9 +3,9 @@ export CUDA_VISIBLE_DEVICES=0,1,4,5
 export PYTHONPATH=/root/fu_wj/clone2github/Reward-Design-in-RL/Code:$PYTHONPATH
 
 
-MODEL_DIR="Models/qwen_3_1_7b_ppo_bf16_selfrm"
+MODEL_DIR="Models/qwen_3_1_7b_grpo_bf16_kl"
 TEST_JSONL="Datasets/gsm8k_json/test.jsonl"
-OUTPUT_PATH="Infer/gsm8k_predictions.jsonl"
+OUTPUT_PATH="Infer/gsm8k_predictions_grpo_kl.jsonl"
 
 accelerate launch \
   --num_processes 4 \

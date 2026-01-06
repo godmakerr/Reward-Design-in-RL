@@ -1,5 +1,48 @@
 import re
+import random
+import json
 from typing import Optional, List, Any
+import torch
+from datasets import load_dataset
+
+def set_seed(seed: int):
+    random.seed(seed)
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)
+
+
+def load_jsonl_as_dataset(jsonl_path: str):
+    ds = load_dataset("json", data_files={"data": jsonl_path})["data"]
+    return ds
+
+def save_policy_only(trainer, tok, out_dir: str):
+    acc = trainer.accelerator
+    acc.wait_for_everyone()
+    os.makedirs(out_dir, exist_ok=True)
+
+    # 1) DeepSpeedEngine（一般 trainer.model 就是 DS engine）
+    engine = getattr(trainer, "deepspeed", None) or trainer.model
+
+    # 2) 所有 rank 都必须跑到这里（内部会 allgather）
+    full_sd = acc.get_state_dict(engine)
+
+    acc.wait_for_everyone()
+
+    if acc.is_main_process:
+        # 3) 只保留 policy.*，并 strip 前缀
+        policy_sd = {k[len("policy."):]: v for k, v in full_sd.items() if k.startswith("policy.")}
+
+        # 4) 拿到未包装 wrapper -> policy
+        wrapper = acc.unwrap_model(trainer.model)  # PolicyAndValueWrapper
+        policy = wrapper.policy
+
+        # 5) save_pretrained + safe_serialization 会正确处理 tied weights
+        policy.save_pretrained(out_dir, state_dict=policy_sd, safe_serialization=True)
+        tok.save_pretrained(out_dir)
+
+    # 6) 释放 + 再 barrier，避免别的 rank 还在用
+    del full_sd
+    acc.wait_for_everyone()
 
 FINAL_RE = re.compile(r"####\s*([-+]?\d[\d,]*\.?\d*)")  # 允许逗号和小数
 NUM_RE = re.compile(r"[-+]?\d[\d,]*\.?\d*")            # 抓取任意数字（含逗号/小数）
@@ -64,8 +107,6 @@ def build_rm_text(
         )
     return q + "\n" + r
 
-import random
-from typing import Optional
 
 def corrupt_final_answer(answer_text: str, seed: Optional[int] = None) -> str:
     """

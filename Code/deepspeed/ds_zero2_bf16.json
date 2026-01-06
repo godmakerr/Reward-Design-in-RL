@@ -4,8 +4,8 @@
   
     "zero_optimization": { 
         "stage": 2,
-        "reduce_bucket_size": 10000000,
-        "allgather_bucket_size": 10000000,
+        "reduce_bucket_size": 200000000,
+        "allgather_bucket_size": 200000000,
         "overlap_comm": true
     },
   
