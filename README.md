@@ -58,16 +58,72 @@ pip install -e .
 ```bash
 pip install -r requirements.txt
 ```
-
-### 2. 运行训练脚本
+### 2. 下载模型与配置环境
+#### 2.1 下载模型
+本项目基于 Qwen3-1.7B 模型进行训练。请从 ModelScope 下载模型（其中包含我们已经训练好的模型）：
 ```bash
-bash Scripts/train_rm.sh
-bash Scripts/train_ppo_rlhf.sh
+# 创建 Models 文件夹
+mkdir Models
+# 方法1：使用 modelscope 命令行工具
+modelscope download --model shireshire/prml_qwen3_1_7b --local_dir Models
+
+# 方法2：手动下载后放置到 Models/ 目录下
+# 从 https://modelscope.cn/models/shireshire/prml_qwen3_1_7b 手动下载并放入 Models/ 目录
+```
+如果想要自行下载，请将模型重命名为`qwen_3_1_7b`并放入 Models/ 目录。
+#### 2.2 配置环境
+- 登录 wandb 便于可视化训练流程：
+```bash
+wandb login
 ```
 
-### 3. 运行评估脚本
+- 根据你的 GPU 配置修改脚本（位于 Scripts/ 目录下）中的环境变量：
 ```bash
+# 在 Scripts/ 目录下的脚本中修改：
+# 1. 设置可用的 GPU 设备（根据实际 GPU 数量调整）
+export CUDA_VISIBLE_DEVICES=0,1,4,5  # 使用4个GPU
+
+# 2. 更新项目路径（如果项目位置不同）
+BASE_DIR="/root/fu_wj/clone2github/Reward-Design-in-RL"
+export PYTHONPATH="${BASE_DIR}/Code:$PYTHONPATH"
+
+# 3. 内存优化设置（可选，用于处理大模型）
+export PYTORCH_ALLOC_CONF=expandable_segments:True
+export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
+```
+#### 2.3 配置训练参数
+
+主要训练参数说明：
+
+| 参数 | 默认值 | 说明 |
+|------|--------|------|
+| `--per_device_batch_size` | 2 (RM) / 16 (GRPO) | 每GPU批大小 |
+| `--gradient_accumulation_steps` | 16 (RM) / 8 (GRPO) | 梯度累积步数 |
+| `--num_train_epochs` | 1 | 训练轮数 |
+| `--max_length` | 512 | 最大序列长度 |
+| `--response_length` | 512 | 生成响应长度 |
+| `--kl_coef` | 0.001 | KL散度系数（GRPO） |
+
+根据你的 GPU 显存调整参数：
+
+- 如果遇到 **OOM（显存不足）**，减小 `per_device_batch_size`。
+- 如果想**加快训练**，增大 `gradient_accumulation_steps`。
+
+我们的实验均在4张Nvidia GeForce RTX 3090 GPU上完成。
+
+### 3. 训练与评估流程
+#### 3.1 完整训练流程
+```bash
+# 1. PPO 训练流程
+## 1.1 训练奖励模型 或 使用现有的奖励模型（如 Models/skywork_reward_qwen_3_1_7b）
+bash Scripts/train_rm.sh
+
+## 1.2 使用 PPO 进行 RLHF 训练
+bash Scripts/train_ppo_rlhf.sh
+
+# 2. GRPO 训练流程  
+bash Scripts/train_grpo_rl.sh
+
+# 3. 评估训练后的模型
 bash Scripts/eval.sh
 ```
-
-评估结果会写入 `Infer/gsm8k_predictions.jsonl`。
