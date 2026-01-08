@@ -1,6 +1,6 @@
 # RLHF on GSM8k with Qwen3-1.7B
 
-本项目实现了基于 PPO (Proximal Policy Optimization) 算法对 Qwen-3-1.7B 模型在 GSM8k 数学推理任务上的强化学习微调。
+本项目实现了基于 PPO 和 GRPO 算法对 Qwen-3-1.7B 模型在 GSM8k 数学推理任务上的强化学习微调，使用 trl 库。
 
 ## 📂 项目结构
 ```
