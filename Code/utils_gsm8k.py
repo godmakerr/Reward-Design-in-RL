@@ -1,6 +1,7 @@
 import re
 import random
 import json
+import math
 from typing import Optional, List, Any
 import torch
 from datasets import load_dataset
@@ -61,6 +62,20 @@ def _to_float(num_str: str) -> Optional[float]:
         return float(s)
     except Exception:
         return None
+    
+def _strip_think_tail(text: Optional[str]) -> str:
+    """
+    If the model output contains <think>...</think>, only score the tail after </think>.
+    This keeps your extraction stable when enable_thinking is on.
+    """
+    if text is None:
+        return ""
+    s = str(text)
+    tag = "</think>"
+    pos = s.rfind(tag)
+    if pos != -1:
+        return s[pos + len(tag):].strip()
+    return s.strip()
 
 def extract_final_number(text: str) -> Optional[float]:
     """
@@ -199,7 +214,132 @@ def compute_binary_rewards(pred_responses: List[str], gold_answers: List[str]) -
     """
     out = []
     for pred, gold in zip(pred_responses, gold_answers):
-        p = extract_final_number(pred)
-        g = extract_final_number(gold)
+        pred_tail = _strip_think_tail(pred)
+        gold_tail = _strip_think_tail(gold)
+        p = extract_final_number(pred_tail)
+        g = extract_final_number(gold_tail)
         out.append(1.0 if (p is not None and g is not None and abs(p - g) < 1e-2) else -1.0)
     return out
+
+
+def compute_format_rewards(pred_responses: List[str], gold_answers: List[str]) -> List[float]:
+    """
+    Only changes ONE condition vs. compute_binary_rewards:
+      - Require strict GSM8K final format: must contain '#### <number>' in pred.
+    Scoring:
+      - if no '#### <number>' -> -1
+      - else: correct (+1) / incorrect (-1) by numeric match
+    """
+    out: List[float] = []
+    for pred, gold in zip(pred_responses, gold_answers):
+        pred_tail = _strip_think_tail(pred)
+        gold_tail = _strip_think_tail(gold)
+
+        # Strict format requirement: must have #### <number>
+        if FINAL_RE.search(pred_tail) is None:
+            out.append(-1.0)
+            continue
+
+        p = extract_final_number(pred_tail)
+        g = extract_final_number(gold_tail)
+        out.append(1.0 if (p is not None and g is not None and abs(p - g) < 1e-2) else -1.0)
+
+    return out
+
+
+def compute_closeness_rewards(pred_responses: List[str], gold_answers: List[str]) -> List[float]:
+    """
+    Only changes ONE condition vs. compute_binary_rewards:
+      - Replace hard +/-1 with a continuous reward based on numeric closeness.
+
+    Reward (clipped to [-1, 1]):
+      r = 2 * exp(-k * rel_err) - 1
+      rel_err = |p - g| / max(1, |g|)
+      - exact match -> 1
+      - large error  -> approaches -1
+
+    Does NOT require '#### <number>' (still uses your extract_final_number fallback).
+    """
+    out: List[float] = []
+    k = 5.0  # decay strength; higher -> only very close answers get positive reward
+
+    for pred, gold in zip(pred_responses, gold_answers):
+        pred_tail = _strip_think_tail(pred)
+        gold_tail = _strip_think_tail(gold)
+
+        p = extract_final_number(pred_tail)
+        g = extract_final_number(gold_tail)
+        if p is None or g is None:
+            out.append(-1.0)
+            continue
+
+        denom = max(1.0, abs(g))
+        rel_err = abs(p - g) / denom
+        r = 2.0 * math.exp(-k * rel_err) - 1.0
+
+        # clip to [-1, 1]
+        if r > 1.0:
+            r = 1.0
+        elif r < -1.0:
+            r = -1.0
+
+        out.append(float(r))
+
+    return out
+
+def compute_format_and_closeness_rewards(pred_responses: List[str], gold_answers: List[str]) -> List[float]:
+    """
+    Soft version of "format + closeness":
+      - Base reward: continuous closeness based on numeric distance (same as before)
+      - Format shaping: add a small bonus if '#### <number>' exists (and is parseable)
+        instead of hard gating to -1 when missing.
+
+    This makes rewards much less sparse early in training, while still pushing the model
+    toward the GSM8K '#### <number>' convention.
+    """
+    out: List[float] = []
+    k = 5.0
+
+    # format shaping strength (tuneable)
+    format_bonus = 0.15   # reward if format is present
+    format_penalty = 0.05 # optional mild penalty if format is absent (set to 0.0 if you prefer)
+
+    for pred, gold in zip(pred_responses, gold_answers):
+        pred_tail = _strip_think_tail(pred)
+        gold_tail = _strip_think_tail(gold)
+
+        # Parse numbers (keep your existing extraction behavior)
+        p = extract_final_number(pred_tail)
+        g = extract_final_number(gold_tail)
+
+        # If cannot parse predicted or gold number, give a strong negative (same spirit as before)
+        if p is None or g is None:
+            out.append(-1.0)
+            continue
+
+        # Base closeness reward in [-1, 1]
+        denom = max(1.0, abs(g))
+        rel_err = abs(p - g) / denom
+        r = 2.0 * math.exp(-k * rel_err) - 1.0
+
+        # Soft format shaping (NO hard -1 gating)
+        has_hash = (FINAL_RE.search(pred_tail) is not None)
+        if has_hash:
+            r += format_bonus
+        else:
+            r -= format_penalty
+
+        # Clip to [-1, 1]
+        if r > 1.0:
+            r = 1.0
+        elif r < -1.0:
+            r = -1.0
+
+        out.append(float(r))
+
+    return out
+
+
+
+
+

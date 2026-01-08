@@ -11,7 +11,7 @@ from transformers import AutoTokenizer, AutoModelForCausalLM
 
 from trl.trainer import GRPOConfig, GRPOTrainer
 
-from Code.utils_gsm8k import compute_binary_rewards, set_seed, load_jsonl_as_dataset
+from Code.utils_gsm8k import compute_binary_rewards, compute_format_rewards, compute_closeness_rewards, compute_format_and_closeness_rewards, set_seed, load_jsonl_as_dataset
 def build_prompt(ex):
     """
     将 GSM8K 原始样本转换为 GRPO 支持的“对话格式 + gold 答案”。
@@ -50,6 +50,35 @@ def gsm8k_rlvr_reward(completions, answer, **kwargs):
     print(rewards)
     return rewards
 
+def make_gsm8k_reward_fn(reward_mode: str):
+    mode2fn = {
+        "binary": compute_binary_rewards,
+        "format": compute_format_rewards,
+        "closeness": compute_closeness_rewards,
+        "format_and_closeness": compute_format_and_closeness_rewards,
+    }
+    if reward_mode not in mode2fn:
+        raise ValueError(f"Unknown reward_mode: {reward_mode}")
+
+    compute_fn = mode2fn[reward_mode]
+
+    def reward_fn(completions, answer, **kwargs):
+        completion_contents = []
+        for completion in completions:
+            if isinstance(completion, list) and len(completion) > 0 and isinstance(completion[0], dict):
+                completion_contents.append(completion[0].get("content", ""))
+            else:
+                completion_contents.append(str(completion))
+
+        rewards = compute_fn(completion_contents, answer)
+
+        # 可选：少打印一点，不然多进程下会爆日志
+        if kwargs.get("global_step", 0) % 50 == 0:  # 有些版本不传 global_step，可删
+            print(f"[reward_mode={reward_mode}] sample_reward={rewards[0]}")
+
+        return rewards
+
+    return reward_fn
 
 def main():
     ap = argparse.ArgumentParser()
@@ -86,6 +115,7 @@ def main():
 
     ap.add_argument("--num_generations", type=int, default=8)
     ap.add_argument("--num_generations_eval", type=int, default=1)
+    ap.add_argument("--reward_mode", type=str, default="binary", choices=["binary", "format", "closeness", "format_and_closeness"],)
 
     args = ap.parse_args()
 
@@ -164,12 +194,12 @@ def main():
 
         seed=args.seed,
     )
-
+    reward_fn = make_gsm8k_reward_fn(args.reward_mode)
     trainer = GRPOTrainer(
         model=policy_model,
         args=grpo_args,
         processing_class=tok,
-        reward_funcs=gsm8k_rlvr_reward,
+        reward_funcs=reward_fn,
         train_dataset=train_ds,
         eval_dataset=eval_ds,
     )
