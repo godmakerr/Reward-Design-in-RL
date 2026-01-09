@@ -114,7 +114,6 @@ export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
 我们的实验均在4张Nvidia GeForce RTX 3090 GPU上完成。
 
 ### 3. 训练与评估流程
-#### 3.1 完整训练流程
 ```bash
 # 1. PPO 训练流程
 ## 1.1 训练奖励模型 或 使用现有的奖励模型（如 Models/skywork_reward_qwen_3_1_7b）
