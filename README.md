@@ -2,6 +2,8 @@
 
 本项目实现了基于 PPO 和 GRPO 算法对 Qwen-3-1.7B 模型在 GSM8k 数学推理任务上的强化学习微调，使用 trl 库。
 
+## Papers will comming soon
+
 ## 📂 项目结构
 ```
 .
