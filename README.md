@@ -111,7 +111,7 @@ export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
 - 如果遇到 **OOM（显存不足）**，减小 `per_device_batch_size`。
 - 如果想**加快训练**，增大 `gradient_accumulation_steps`。
 
-我们的实验均在4张Nvidia GeForce RTX 3090 GPU上完成。
+我们的实验均在4张Nvidia GeForce RTX 3090 GPU上完成。注意：由于时间和算力的限制，所有的强化学习微调均在**非推理**的Qwen3-1.7B上完成。 
 
 ### 3. 训练与评估流程
 ```bash

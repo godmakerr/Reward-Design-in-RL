@@ -35,4 +35,3 @@ accelerate launch \
   --per_device_eval_batch_size 16 \
   --num_train_epochs 1 \
   --num_generations 8 \
-  --kl_coef 0.001

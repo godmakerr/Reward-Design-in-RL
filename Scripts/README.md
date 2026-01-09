@@ -5,4 +5,5 @@
 ## 脚本说明
 - `train_rm.sh`: 训练奖励模型（RM）。
 - `train_ppo_rlhf.sh`: 运行 PPO RLHF 训练。
+- `train_grpo_rl.sh`: 运行 GRPO 训练。
 - `eval.sh`: 评估基础模型与 RLHF 模型。
