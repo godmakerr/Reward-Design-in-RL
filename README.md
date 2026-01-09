@@ -129,3 +129,30 @@ bash Scripts/train_grpo_rl.sh
 # 3. 评估训练后的模型
 bash Scripts/eval.sh
 ```
+
+## 实验结果
+### 1. 模型说明
+- `qwen_3_1_7b/`: Baseline 模型。
+- `skywork_reward_qwen_3_1_7b/`: skywork RM。
+- `qwen_3_1_7b_rm/`: 自己训练的 RM。
+- `qwen_3_1_7b_ppo_bf16/`: PPO 微调后的模型。
+- `qwen_3_1_7b_ppo_bf16_selfrm/`: 使用自训练 RM 的 PPO 微调后的模型。
+- `qwen_3_1_7b_grpo_bf16/`: GRPO 微调（KL散度系数为0，奖励为答案）后的模型。
+- `qwen_3_1_7b_grpo_bf16_kl/`: GRPO 微调（KL散度系数为0.01，奖励为答案）后的模型。
+- `qwen_3_1_7b_grpo_bf16_kl_0.001/`: GRPO 微调（KL散度系数为0.001，奖励为答案）后的模型。
+- `qwen_3_1_7b_grpo_bf16_kl_0.001_format/`: GRPO 微调（KL散度系数为0.001，奖励为格式奖励）后的模型。
+- `qwen_3_1_7b_grpo_bf16_kl_0.001_closeness/`: GRPO 微调（KL散度系数为0.001，奖励为与答案的接近程度）后的模型。
+- `qwen_3_1_7b_grpo_bf16_kl_0.001_format_and_closeness/`: GRPO 微调（KL散度系数为0.001，奖励为与答案接近程度和格式奖励的加权）后的模型。
+
+### 2. GSM8K 评测结果（分数从高到低）
+| 模型名称 | 准确率 | 正确数/总数 |
+|----------|--------|-------------|
+| grpo | 82.03% | 1082/1319 |
+| grpo_kl | 80.82% | 1066/1319 |
+| grpo_kl_0.001_closeness | 80.29% | 1059/1319 |
+| grpo_kl_0.001 | 80.06% | 1056/1319 |
+| grpo_kl_0.001_format_and_closeness | 79.30% | 1046/1319 |
+| ppo_self_rm | 78.17% | 1031/1319 |
+| ppo_skywork_rm | 77.94% | 1028/1319 |
+| baseline | 77.86% | 1027/1319 |
+| grpo_kl_0.001_format | 76.72% | 1012/1319 |
