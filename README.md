@@ -137,6 +137,10 @@ bash Scripts/eval.sh
 - `qwen_3_1_7b_ppo_bf16/`: PPO 微调后的模型。
 - `qwen_3_1_7b_ppo_bf16_selfrm/`: 使用自训练 RM 的 PPO 微调后的模型。
 - `qwen_3_1_7b_grpo_bf16/`: GRPO 微调（KL散度系数为0，奖励为答案）后的模型。
+- `qwen_3_1_7b_grpo_bf16_format/`: GRPO 微调（KL散度系数为0，奖励为格式奖励）后的模型。
+- `qwen_3_1_7b_grpo_bf16_closeness/`: GRPO 微调（KL散度系数为0，奖励为与答案的接近程度）后的模型。
+- `qwen_3_1_7b_grpo_bf16_format_and_closeness/`: GRPO 微调（KL散度系数为0，奖励为与答案接近程度和格式奖励的加权）后的模型。
+- `qwen_3_1_7b_grpo_bf16_kl_0.1/`: GRPO 微调（KL散度系数为0.1，奖励为答案）后的模型。
 - `qwen_3_1_7b_grpo_bf16_kl/`: GRPO 微调（KL散度系数为0.01，奖励为答案）后的模型。
 - `qwen_3_1_7b_grpo_bf16_kl_0.001/`: GRPO 微调（KL散度系数为0.001，奖励为答案）后的模型。
 - `qwen_3_1_7b_grpo_bf16_kl_0.001_format/`: GRPO 微调（KL散度系数为0.001，奖励为格式奖励）后的模型。
