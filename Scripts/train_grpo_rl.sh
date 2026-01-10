@@ -15,7 +15,7 @@ TRAIN_JSONL="${DATASETS_DIR}/gsm8k_json/train.jsonl"
 EVAL_JSONL="${DATASETS_DIR}/gsm8k_json/test.jsonl"
 
 ACTOR_DIR="${MODEL_DIR}/qwen_3_1_7b"
-OUT_DIR="${MODEL_DIR}/qwen_3_1_7b_grpo_bf16_kl_0.001"
+OUT_DIR="${MODEL_DIR}/qwen_3_1_7b_grpo_bf16_kl_0.1"
 
 ACC_CONFIG="${BASE_DIR}/Code/accelerate/ds_zero2_bf16.yaml"
 
@@ -35,3 +35,4 @@ accelerate launch \
   --per_device_eval_batch_size 16 \
   --num_train_epochs 1 \
   --num_generations 8 \
+  --kl_coef 0.1 \
